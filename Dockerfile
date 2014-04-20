@@ -10,6 +10,8 @@ RUN echo "teamspeak:!:1999:" >> /etc/group
 
 # Expose TeamSpeak ports
 EXPOSE 9987
+EXPOSE 9988
+EXPOSE 9989
 
 # Add the start & install script
 # Because TeamSpeak is proprietary software, you'll need

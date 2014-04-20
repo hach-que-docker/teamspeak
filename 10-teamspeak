@@ -23,9 +23,6 @@ fi
 
 url=$(cat /config/downloadurl)
 
-set -e
-set -x
-
 echo "Downloading TeamSpeak..."
 
 cd /tmp
@@ -114,7 +111,9 @@ while [ 0 -eq 0 ]; do
     fi
   done
 
-  sleep 1
+  tail /srv/teamspeak/logs/* || true
+
+  sleep 5
 done
 
 cat /srv/teamspeak/logs/* || true
