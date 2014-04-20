@@ -9,6 +9,8 @@ RUN echo "teamspeak:x:1999:1999:user for teamspeak:/srv/teamspeak:/bin/bash" >> 
 RUN echo "teamspeak:!:1999:" >> /etc/group
 
 # Expose TeamSpeak ports
+EXPOSE 30033
+EXPOSE 10011
 EXPOSE 9987
 EXPOSE 9988
 EXPOSE 9989
