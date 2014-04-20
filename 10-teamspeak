@@ -1,0 +1,121 @@
+#!/bin/bash
+
+if [ ! -e /config ]; then
+    echo "+++++++++++ /config is missing +++++++++++"
+    echo ""
+    echo "You need to map /config to a directory "
+    echo "on the host!"
+    echo ""
+    echo "+++++++++++ Boot failed! +++++++++"
+    exit 1
+fi
+
+if [ ! -e /config/downloadurl ]; then
+    echo "++++++++++ /config/downloadurl is missing ++++++++++"
+    echo ""
+    echo "You need to place the download URL (by itself) in a "
+    echo "file called 'downloadurl' in the configuration "
+    echo "directory."
+    echo ""
+    echo "++++++++++ Boot failed! ++++++++++"
+    exit 1
+fi
+
+url=$(cat /config/downloadurl)
+
+set -e
+set -x
+
+echo "Downloading TeamSpeak..."
+
+cd /tmp
+wget $url
+tar -xvf *.tar.gz
+cd *
+
+echo "Downloaded and extracted TeamSpeak successfully!"
+
+echo "Moving TeamSpeak..."
+
+# Move TeamSpeak into /srv/teamspeak
+mkdir -pv /srv/teamspeak
+mv -v * /srv/teamspeak/
+
+cd /srv/teamspeak/
+chown -Rv teamspeak:teamspeak /srv/teamspeak
+chown -Rv teamspeak:teamspeak /config
+
+USERFILES="licensekey.dat query_ip_blacklist.txt query_ip_whitelist.txt serverkey.dat ts3server.sqlitedb"
+
+# If /config/ts3server.sqlitedb exists, then this is an
+# existing installation and we just need to link up the
+# existing files.
+if [ -e /config/ts3server.sqlitedb ]; then
+
+    # Link up the existing files
+    echo "Linking up database..."
+    for i in $USERFILES; do
+        if [ -e /config/$i ]; then
+            sudo -u teamspeak ln -v -s /config/$i $i
+        fi
+    done
+
+else
+
+    # Start the server, wait for it to start up, and
+    # then shut it down and move the files into the
+    # configuration folder.
+
+    echo "First time start..."
+    sudo -u teamspeak /srv/teamspeak/ts3server_startscript.sh start
+
+    echo "Waiting..."
+    sleep 10
+
+    echo "Stopping..."
+    sudo -u teamspeak /srv/teamspeak/ts3server_startscript.sh stop
+
+    echo "Moving files..."
+    for i in $USERFILES; do
+        if [ -e $i ]; then
+            if [ ! -e /config/$i ]; then
+                sudo -u teamspeak mv -v $i /config/$i
+            fi
+        fi
+    done
+
+    echo "Linking up database..."
+    for i in $USERFILES; do
+        if [ -e /config/$i ]; then
+            sudo -u teamspeak ln -v -s /config/$i $i
+        fi
+    done
+
+fi
+
+echo "Removing old TeamSpeak PID..."
+rm -v ts3server.pid || true
+
+echo "Starting TeamSpeak..."
+sudo -u teamspeak /srv/teamspeak/ts3server_startscript.sh start
+cp ts3server.pid /run/watch/teamspeak
+
+# Special loop check for us so we can print the logs
+while [ 0 -eq 0 ]; do
+  for i in /run/watch/*; do
+    pid=$(cat $i)
+
+    if [ ! -e /proc/$pid ]; then
+      echo "[ EXITED ] $i"
+
+      cat /srv/teamspeak/logs/* || true
+
+      exit 1
+    fi
+  done
+
+  sleep 1
+done
+
+cat /srv/teamspeak/logs/* || true
+
