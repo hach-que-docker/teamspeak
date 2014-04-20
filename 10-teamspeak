@@ -97,24 +97,3 @@ echo "Starting TeamSpeak..."
 sudo -u teamspeak /srv/teamspeak/ts3server_startscript.sh start
 cp ts3server.pid /run/watch/teamspeak
 
-# Special loop check for us so we can print the logs
-while [ 0 -eq 0 ]; do
-  for i in /run/watch/*; do
-    pid=$(cat $i)
-
-    if [ ! -e /proc/$pid ]; then
-      echo "[ EXITED ] $i"
-
-      cat /srv/teamspeak/logs/* || true
-
-      exit 1
-    fi
-  done
-
-  tail /srv/teamspeak/logs/* || true
-
-  sleep 5
-done
-
-cat /srv/teamspeak/logs/* || true
-
