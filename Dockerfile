@@ -1,5 +1,5 @@
 FROM hachque/systemd-none
-MAINTAINER James Rhodes
+MAINTAINER June Rhodes
 
 # Install requirements
 RUN zypper --non-interactive in wget sudo
